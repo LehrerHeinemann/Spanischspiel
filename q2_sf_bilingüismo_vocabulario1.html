@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Erweitertes Spanisch-Deutsch Memory Spiel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+        }
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+            max-width: 1200px;
+        }
+        .card {
+            width: 130px;
+            height: 90px;
+            background-color: #3498db;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            font-size: 12px;
+            color: white;
+            text-align: center;
+            transition: background-color 0.3s;
+            perspective: 1000px;
+        }
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 5px;
+            box-sizing: border-box;
+        }
+        .card-front {
+            background-color: #3498db;
+        }
+        .card-back {
+            background-color: #2ecc71;
+            transform: rotateY(180deg);
+        }
+        .card.matched {
+            visibility: hidden;
+        }
+        #message {
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 20px;
+            color: #27ae60;
+        }
+    </style>
+</head>
+<body>
+    <h1>Erweitertes Spanisch-Deutsch Memory</h1>
+    <div id="game-board"></div>
+    <div id="message"></div>
+
+    <script>
+        const vocabulary = [
+            { spanish: "la beca", german: "ein Stipendium" },
+            { spanish: "el idioma oficial", german: "die Amtssprache" },
+            { spanish: "la comunidad autónoma", german: "das spanische \"Bundesland\"" },
+            { spanish: "el catedrático", german: "der Uniprofessor" },
+            { spanish: "enseñar", german: "unterrichten" },
+            { spanish: "la enseñanza", german: "die Bildung" },
+            { spanish: "la administración", german: "die Verwaltung" },
+            { spanish: "el dominio lingüístico", german: "das Sprachgebiet" },
+            { spanish: "incluir", german: "einschließen" },
+            { spanish: "el/la hablante", german: "der/die Sprecher(in)" },
+            { spanish: "la difusión", german: "die Verbreitung" },
+            { spanish: "la Constitución", german: "die Verfassung" },
+            { spanish: "tener derecho a hacer algo", german: "das Recht haben etwas zu tun" },
+            { spanish: "el deber", german: "die Pflicht" },
+            { spanish: "el estatuto", german: "das Statut" },
+            { spanish: "el estatuto de autonomía", german: "ein Autonomiestatus" },
+            { spanish: "el patrimonio cultural", german: "das Kulturerbe" },
+            { spanish: "la modalidad lingüística", german: "die Sprachvariante" },
+            { spanish: "próspero/a", german: "wohlhabend" },
+            { spanish: "oprimir", german: "unterdrücken" },
+            { spanish: "demás", german: "weitere" },
+            { spanish: "la persecución", german: "die Verfolgung" },
+            { spanish: "perseguir", german: "verfolgen" },
+            { spanish: "prohibir", german: "verbieten" },
+            { spanish: "aún", german: "noch" },
+            { spanish: "la imagen exterior", german: "das Erscheinungsbild" },
+            { spanish: "la lengua dominante", german: "die dominierende Sprache" },
+            { spanish: "bilingüe", german: "zweisprachig" },
+            { spanish: "monolingüe", german: "einsprachig" },
+            { spanish: "el pluralismo lingüístico", german: "die Mehrsprachigkeit" }
+        ];
+
+        let cards = [];
+        let flippedCards = [];
+        let matchedPairs = 0;
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function createGameBoard() {
+            const gameBoard = document.getElementById("game-board");
+            cards = [...vocabulary.map(item => item.spanish), ...vocabulary.map(item => item.german)];
+            shuffleArray(cards);
+
+            cards.forEach((text, index) => {
+                const card = document.createElement("div");
+                card.classList.add("card");
+                card.innerHTML = `
+                    <div class="card-inner">
+                        <div class="card-front"></div>
+                        <div class="card-back">${text}</div>
+                    </div>
+                `;
+                card.dataset.index = index;
+                card.addEventListener("click", flipCard);
+                gameBoard.appendChild(card);
+            });
+        }
+
+        function flipCard() {
+            if (flippedCards.length < 2 && !this.classList.contains("flipped") && !this.classList.contains("matched")) {
+                this.classList.add("flipped");
+                flippedCards.push(this);
+
+                if (flippedCards.length === 2) {
+                    setTimeout(checkMatch, 1000);
+                }
+            }
+        }
+
+        function checkMatch() {
+            const [card1, card2] = flippedCards;
+            const index1 = card1.dataset.index;
+            const index2 = card2.dataset.index;
+
+            if (
+                (vocabulary.some(item => item.spanish === cards[index1] && item.german === cards[index2])) ||
+                (vocabulary.some(item => item.german === cards[index1] && item.spanish === cards[index2]))
+            ) {
+                card1.classList.add("matched");
+                card2.classList.add("matched");
+                matchedPairs++;
+
+                if (matchedPairs === vocabulary.length) {
+                    document.getElementById("message").textContent = "¡Muy bien!";
+                }
+            } else {
+                setTimeout(() => {
+                    card1.classList.remove("flipped");
+                    card2.classList.remove("flipped");
+                }, 500);
+            }
+
+            flippedCards = [];
+        }
+
+        createGameBoard();
+    </script>
+</body>
+</html>
